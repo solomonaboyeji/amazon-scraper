@@ -4,7 +4,6 @@
 # https://docs.scrapy.org/en/latest/topics/items.html
 
 import datetime
-from multiprocessing import Value
 import scrapy
 
 from itemloaders.processors import TakeFirst, MapCompose
@@ -47,6 +46,7 @@ def parse_to_int(input_str: str):
 
 
 class ProductItem(scrapy.Item):
+    config_category_ref_code = scrapy.Field(output_processor=TakeFirst())
     amazon_result_page_number = scrapy.Field(output_processor=TakeFirst())
     amazon_result_page_position = scrapy.Field(output_processor=TakeFirst())
     name = scrapy.Field(

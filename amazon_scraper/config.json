@@ -2,6 +2,7 @@
   {
     "category": "Beauty",
     "sub_category": "Skin Care",
+    "unique_ref_code": "BEAUTY_SKIN_CARE",
     "maximum_pages": 1,
     "start_page": 3,
     "base_url": "https://amazon.co.uk",

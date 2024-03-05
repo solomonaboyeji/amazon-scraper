@@ -7,6 +7,12 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
+import os
+import dotenv
+
+dotenv.load_dotenv()
+
+
 BOT_NAME = "amazon_scraper"
 
 SPIDER_MODULES = ["amazon_scraper.spiders"]
@@ -75,7 +81,8 @@ COOKIES_ENABLED = False
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    "amazon_scraper.pipelines.DownloadFeaturedImagePipeline": 300,
+    "amazon_scraper.pipelines.DownloadFeaturedImagePipeline": 100,
+    "amazon_scraper.pipelines.SaveToDatabasePipeline": 99,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -106,3 +113,16 @@ FEED_EXPORT_ENCODING = "utf-8"
 
 # amazon-scraper
 READ_PRODUCT_CATEGORY_CONFIG_FROM_FILE = True
+
+DATABASE_USERNAME = os.getenv("DATABASE_USERNAME")
+DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
+DATABASE_SERVER = os.getenv("DATABASE_SERVER")
+DATABASE_NAME = os.getenv("DATABASE_NAME")
+DATABASE_PORT = os.getenv("DATABASE_PORT", "1433")
+CONNECTION_PARAMS = {
+    "dbname": DATABASE_NAME,
+    "user": DATABASE_USERNAME,
+    "password": DATABASE_PASSWORD,
+    "host": DATABASE_SERVER,
+    "port": DATABASE_PORT,
+}
