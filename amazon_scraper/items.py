@@ -6,6 +6,7 @@
 import datetime
 import scrapy
 
+from markdownify import markdownify as md
 from itemloaders.processors import TakeFirst, MapCompose
 from w3lib.html import remove_tags
 
@@ -112,4 +113,11 @@ class ProductItem(scrapy.Item):
             str.strip,
         ),
         output_processor=TakeFirst(),
+    )
+
+
+class UpdateProductDescriptionItem(ProductItem):
+    description = scrapy.Field(
+        # input_processor=MapCompose(md),
+        output_processor=TakeFirst()
     )

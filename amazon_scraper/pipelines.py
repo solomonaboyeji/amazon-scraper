@@ -10,7 +10,7 @@ from pathlib import Path
 import httpx
 import psycopg2
 
-from amazon_scraper.items import ProductItem
+from amazon_scraper.items import ProductItem, UpdateProductDescriptionItem
 from amazon_scraper.settings import CONNECTION_PARAMS
 
 from loguru import logger
@@ -33,8 +33,8 @@ class SaveToDatabasePipeline:
             """
                             CREATE TABLE IF NOT EXISTS products
                             (
-                                data_uuid TEXT PRIMARY KEY,
-                                data_asin TEXT,
+                                data_asin TEXT PRIMARY KEY,
+                                data_uuid TEXT,
                                 total_customer_that_rated INTEGER,
                                 ratings REAL,
                                 config_category_ref_code TEXT,
@@ -49,6 +49,7 @@ class SaveToDatabasePipeline:
                                 date_scraped DATE,
                                 category TEXT,
                                 sub_category TEXT,
+                                description TEXT,
                                 image_data BYTEA
                             )
                         """
@@ -67,7 +68,7 @@ class SaveToDatabasePipeline:
             values = tuple([item[key] for key in item_keys])
             logger.info("Inserting into products table.")
             self.cursor.execute(
-                f"INSERT INTO products ({columns}) VALUES ({parameters}) ON CONFLICT (data_uuid) DO NOTHING",
+                f"INSERT INTO products ({columns}) VALUES ({parameters}) ON CONFLICT (data_asin) DO NOTHING",
                 values,
             )
             self.conn.commit()
@@ -121,5 +122,54 @@ class DownloadFeaturedImagePipeline:
             )
             Path(f"{directory}/{data_uuid}.jpeg").write_bytes(response.content)
             logger.success(f"{self.tag}Downloaded {data_uuid}.jpeg")
+
+        return item
+
+
+class UpdateDescriptionPipeline:
+
+    def __init__(self) -> None:
+        self.tag = f"[{self.__class__.__name__}]: "
+        logger.info(f"{self.tag}Connecting to SQL database...")
+        self.conn: PsycopgConnection = psycopg2.connect(**CONNECTION_PARAMS)
+        self.cursor: PsycopgCursor = self.conn.cursor()
+
+    def save_image_to_database(
+        self, product_uuid: str, image_data: bytes, table_name: str = "products"
+    ):
+        self.cursor.execute(
+            f"UPDATE {table_name} SET image_data = %s WHERE data_uuid = %s",
+            (psycopg2.Binary(image_data), product_uuid),
+        )
+        self.conn.commit()
+
+    def process_item(self, item, spider):
+
+        if isinstance(item, UpdateProductDescriptionItem):
+            _item: UpdateProductDescriptionItem = item
+
+            if "description" not in item:
+                return item
+
+            logger.warning(
+                f"Updating {_item['data_asin']} with description {len(item['description'])}"
+            )
+
+            sql_stmt = f"""
+                UPDATE products 
+                SET description = %s
+                WHERE data_asin = %s;
+            """
+
+            self.cursor.execute(
+                sql_stmt,
+                (
+                    item["description"],
+                    item["data_asin"],
+                ),
+            )
+            self.conn.commit()
+
+            logger.success(f"{self.tag}Updated {item['data_asin']}")
 
         return item
