@@ -18,6 +18,8 @@ The `settings.py` contains a lot of setting that you might need to tweak as you 
 
 The user-agents in the `USER_AGENT_LIST` variable must not contain a mobile device user-agent, as this will cause the site not serve elements needed by scrapy.
 
+You should create file `proxy-ips.txt` with each IP in a new line. If you do not intend to use proxy IP, create the file with empty content.
+
 ## Proxy IP Addresses
 
 You should add a sizeable amount of proxy addresses into the `settings.py` file (`ROTATING_PROXY_LIST`). This will ensure your own IP address does not get banned. You can get free addresses on the internet, but you will need to be changing these once they get banned.
@@ -38,17 +40,21 @@ The first step is to scrap the products basic information from Amazon. You can d
 This will fetched products from the categories that have been indicated in the `config.py` file.
 
 ```sh
-scrapy crawl products
+cd amazon_scraper && scrapy crawl products
 ```
+
+Change `CONCURRENT_REQUESTS` to 100-200 or a suitable value that won't cog the memory and won't be too slow for your use case.
 
 ## Scraping Descriptions
 
 The fetched products will not have their description, hence you will need to run the command below to fetch the descriptions of products that currently does not have their description fetched.
 
+Change `CONCURRENT_REQUESTS` to 16 or a suitable value that won't cog the memory.
+
 ```sh
-scrapy crawl descriptions
+cd amazon_scraper && scrapy crawl descriptions
 ```
 
-## Scrapping Reviews
+## Scraping Reviews
 
 TODO

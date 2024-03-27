@@ -63,7 +63,7 @@ class DescriptionsSpider(scrapy.Spider):
 
                 products_bag.append(product_dict)
 
-            logger.success(f"NO_OF_PRODUCTS {len(products_bag)}")
+            logger.success(f"NO_OF_PRODUCTS {ref_code} -  {len(products_bag)}")
 
             # load this page and fetch more css selector from the new image to add to the item item
             expand_elements = self._current_page_config["product_page"][

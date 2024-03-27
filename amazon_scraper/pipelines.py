@@ -10,7 +10,7 @@ from pathlib import Path
 import httpx
 import psycopg2
 
-from amazon_scraper.items import ProductItem, UpdateProductDescriptionItem
+from amazon_scraper.items import ProductItem, ReviewItem, UpdateProductDescriptionItem
 from amazon_scraper.settings import CONNECTION_PARAMS
 
 from loguru import logger
@@ -31,44 +31,76 @@ class SaveToDatabasePipeline:
         logger.info(f"{self.tag}Creating table if not exists.")
         self.cursor.execute(
             """
-                            CREATE TABLE IF NOT EXISTS products
-                            (
-                                data_asin TEXT PRIMARY KEY,
-                                data_uuid TEXT,
-                                total_customer_that_rated INTEGER,
-                                ratings REAL,
-                                config_category_ref_code TEXT,
-                                amazon_result_page_number INTEGER,
-                                amazon_result_page_position INTEGER,
-                                name TEXT,
-                                price REAL,
-                                currency TEXT,
-                                product_page_url TEXT,
-                                customer_reviews_url TEXT,
-                                img_url TEXT,
-                                date_scraped DATE,
-                                category TEXT,
-                                sub_category TEXT,
-                                description TEXT,
-                                image_data BYTEA
-                            )
-                        """
+                CREATE TABLE IF NOT EXISTS products
+                (
+                    data_asin TEXT PRIMARY KEY,
+                    data_uuid TEXT,
+                    total_customer_that_rated INTEGER,
+                    ratings REAL,
+                    config_category_ref_code TEXT,
+                    amazon_result_page_number INTEGER,
+                    amazon_result_page_position INTEGER,
+                    name TEXT,
+                    price REAL,
+                    currency TEXT,
+                    product_page_url TEXT,
+                    customer_reviews_url TEXT,
+                    img_url TEXT,
+                    date_scraped DATE,
+                    category TEXT,
+                    sub_category TEXT,
+                    description TEXT,
+                    image_data BYTEA
+                )
+            """
         )
+        self.conn.commit()
+
+        self.cursor.execute(
+            """ 
+                CREATE TABLE IF NOT EXISTS reviews
+                (
+                    review_id TEXT PRIMARY KEY,
+                    product_asin TEXT ,
+                    review_location TEXT,
+                    review_date TEXT,
+                    review_title TEXT,
+                    helpful_vote TEXT,
+                    review_rating TEXT,
+                    position_on_page INTEGER,
+                    date_scraped DATE,
+                    review_content TEXT,
+                    page_url TEXT,
+                    
+                    FOREIGN KEY (product_asin) REFERENCES products(data_asin)
+                )
+        
+        """
+        )
+
         self.conn.commit()
 
     def process_item(self, item, spider):
 
-        if issubclass(ProductItem, type(item)):
-            item_keys = item.keys()
-            parameters = "".join(["%s, " for a in item_keys])[
-                :-2
-            ]  # removing the last comma
+        item_keys = item.keys()
+        parameters = "".join(["%s, " for a in item_keys])[
+            :-2
+        ]  # removing the last comma
+        columns = ", ".join([a for a in item_keys])
+        values = tuple([item[key] for key in item_keys])
 
-            columns = ", ".join([a for a in item_keys])
-            values = tuple([item[key] for key in item_keys])
+        if issubclass(ProductItem, type(item)):
             logger.info("Inserting into products table.")
             self.cursor.execute(
                 f"INSERT INTO products ({columns}) VALUES ({parameters}) ON CONFLICT (data_asin) DO NOTHING",
+                values,
+            )
+            self.conn.commit()
+
+        elif issubclass(ReviewItem, type(item)):
+            logger.info("Inserting into reviews table.")
+            self.cursor.execute(
+                f"INSERT INTO reviews ({columns}) VALUES ({parameters}) ON CONFLICT (review_id) DO NOTHING",
                 values,
             )
             self.conn.commit()

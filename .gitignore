@@ -2,3 +2,7 @@ products
 __pycache__
 *__pycache__
 .env
+screenshots
+results.json
+results.json
+proxy-ips.txt
